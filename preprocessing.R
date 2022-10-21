@@ -11,4 +11,7 @@ test_data <- data.frame(
   "pct_squished_tomato" = rbeta(n_bananas, 1, 1),
   "pct_squished_apple" = rbeta(n_bananas, 1, 1)
 )
-write.csv(test_data, "aggregated_measurements.csv")
+
+# these can be kept, but switch out test_data with the name of daniele's final dataframe
+data_to_write <- test_data
+write.csv(data_to_write, "aggregated_measurements.csv")
