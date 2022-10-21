@@ -11,4 +11,7 @@ test_data <- data.frame(
   "pct_squished_tomato" = rbeta(n_permutations, 1, 1),
   "pct_squished_apple" = rbeta(n_permutations, 1, 1)
 )
+
+# these lines can be kept, but replace test_data with xinhe's final dataframe
+data_to_write <- test_data
 write.csv(test_data, "permutations.csv")
