@@ -14,4 +14,4 @@ test_data <- data.frame(
 
 # these lines can be kept, but replace test_data with xinhe's final dataframe
 data_to_write <- test_data
-write.csv(test_data, "permutations.csv")
+write.csv(test_data, "permutations.csv", row.names = FALSE)
