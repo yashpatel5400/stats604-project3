@@ -14,4 +14,4 @@ test_data <- data.frame(
 
 # these can be kept, but switch out test_data with the name of daniele's final dataframe
 data_to_write <- test_data
-write.csv(data_to_write, "aggregated_measurements.csv")
+write.csv(data_to_write, "aggregated_measurements.csv", row.names = FALSE)
