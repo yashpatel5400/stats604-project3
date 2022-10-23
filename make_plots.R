@@ -8,6 +8,7 @@ measurements <- read.csv("aggregated_measurements.csv", row.names = NULL)
 GREEN <- "#12b30c"
 BROWN <- "#4a4d09"
 YELLOW <- "#f2db2c"
+PVAL_BLUE <- "#0726f0"
 title_size <- 16
 text_size <- 14
 plot_theme <- theme(panel.background = element_blank(),
@@ -20,7 +21,22 @@ plot_theme <- theme(panel.background = element_blank(),
 stat_cols <- colnames(permutations)[!grepl("banana", colnames(permutations))]
 banana_cols <- colnames(permutations)[grepl("banana", colnames(permutations))]
 n_bananas <- length(banana_cols)
-true_assignment <- rep(c("C", "A", "T"), each = 8)
+true_test_statistics <- mapply(
+  function(stat) {
+    if (grepl("apple$", stat)) {
+      trt <- "A"
+      stat <- gsub("_apple", "", stat)
+    } else if (grepl("tomato$", stat)) {
+      trt <- "T"
+      stat <- gsub("_tomato", "", stat)
+    } else {
+      stop("Did not encounter a valid treatment level")
+    }
+    mean(measurements[measurements$trt == trt, stat]) - mean(measurements[measurements$trt == "C", stat])
+  },
+  stat_cols,
+  USE.NAMES = TRUE
+)
 
 # plot 1 data
 pivoted_measurements <- tidyr::pivot_longer(measurements, -c("banana", "trt"))
@@ -30,7 +46,9 @@ pivoted_measurements <- pivoted_measurements %>%
                             gsub("avg", "Average",
                                  gsub("rgb", "RGB",
                                       gsub("_", " ", name)))),
-                Treatment = factor(trt, levels = c("Control", "Apple", "Tomato")))
+                Treatment = factor(trt,
+                                   levels = c("C", "A", "T"),
+                                   labels = c("Control", "Apple", "Tomato")))
 
 # plot 2 data
 assignment_counts <- sapply(permutations[, banana_cols], table)
@@ -79,22 +97,26 @@ make_all_bananas_comparison_plot <- function(perms, stat) {
   pivot_data$Banana <- factor(pivot_data$Banana,
                               levels = seq_len(n_bananas))
 
-  # legend_x_val <- quantile(perms[, stat], 0.975)
-  # legend_y_val_all <- max(table(cut_width(perms[, stat], width = 0.2)))
+  # running one-sided tests because trt should increase avg RGB and pct brown
+  pval <- sum(perms[[stat]] >= true_test_statistics[stat]) / nrow(perms)
+  pval_label_x_val <- true_test_statistics[stat]
+  pval_label_y_val <- max(table(cut_width(perms[[stat]], width = 0.03)))
   ggplot(perms) +
     geom_histogram(aes(x = !!sym(stat)), fill = BROWN) +
     geom_histogram(data = pivot_data,
                    aes(x = !!sym(stat), fill = Banana),
                    position = "identity") +
+    geom_vline(aes(xintercept=true_test_statistics[stat]), color = PVAL_BLUE,
+               linetype="dashed") +
     scale_fill_manual(
       values = scales::seq_gradient_pal(YELLOW, GREEN)(seq(0, 1, length.out=n_bananas))) +
     labs(x = paste0(clean_stat," Test Statistic"),
          y = "N Permutations") +
-    # annotate("label", x = legend_x_val, y = legend_y_val_all,
-    #          label = paste0("All Permutations\nDistribution"),
-    #          color = BROWN, size = 5) +
+    annotate("label", x = pval_label_x_val, y = pval_label_y_val,
+             label = paste0("P-value: ", round(pval, 3)),
+             color = PVAL_BLUE, size = 5) +
     plot_theme
-} 
+}
 
 # plots 3b func
 make_banana_specific_comparison_plot <- function(perms, banana, stat) {
