@@ -17,6 +17,7 @@ plot_theme <- theme(panel.background = element_blank(),
                     legend.text = element_text(size = text_size),
                     legend.title = element_text(size = title_size),
                     strip.text = element_text(size = text_size))
+plot_folder <- "plots"
 
 stat_cols <- colnames(permutations)[!grepl("banana", colnames(permutations))]
 banana_cols <- colnames(permutations)[grepl("banana", colnames(permutations))]
@@ -169,7 +170,7 @@ pivoted_measurements %>%
   scale_color_manual(values = c("Control" = GREEN, "Apple" = YELLOW, "Tomato" = BROWN)) +
   labs(x = "Banana", y = "Measurement Value") +
   plot_theme
-ggsave("plot1.png")
+ggsave(paste(plot_folder, "plot1.png", sep="/"))
 
 ggplot(count_plot_df) +
   geom_col(aes(x=count, y=banana, fill=Treatment),
@@ -177,10 +178,10 @@ ggplot(count_plot_df) +
   scale_fill_manual(values = c("Control" = GREEN, "Apple" = YELLOW, "Tomato" = BROWN)) +
   labs(x="N Permutations", y="Banana") +
   plot_theme
-ggsave("plot2.png")
+ggsave(paste(plot_folder, "plot2.png", sep="/"))
 
 for (r in seq_along(stat_cols)) {
   make_all_bananas_comparison_plot(permutations, stat_cols[r])
-  ggsave(paste0("plot3", letters[r], ".png"))
+  ggsave(paste(plot_folder, paste0("plot3", letters[r], ".png"), sep="/"))
 }
 
