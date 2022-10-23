@@ -1,7 +1,7 @@
 # these lines can be replaced by xinhe's code
 set.seed(30001)
 
-obs <- read.csv(aggregated_measurements.csv)
+obs <- read.csv("aggregated_measurements.csv")
 
 n_ctrl_bananas <- n_tomato_bananas <- n_apple_bananas <- 12
 n_bananas <- sum(c(n_ctrl_bananas, n_tomato_bananas, n_apple_bananas))
