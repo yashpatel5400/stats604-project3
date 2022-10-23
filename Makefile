@@ -1,4 +1,4 @@
-plot1.png plot2.png plot3.png: permutations.csv make_plots.R
+plot*: permutations.csv make_plots.R
 	Rscript make_plots.R
 
 permutations.csv: aggregated_measurements.csv permutation_test.R
