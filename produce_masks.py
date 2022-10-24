@@ -53,9 +53,6 @@ special_seeds = {
 
 for folder in ["before", "after"]:
     for banana_idx in range(1, 37):
-        if banana_idx not in special_seeds[folder]:
-            continue
-
         root_folder = f"/Users/yppatel/Documents/PhD_Year2_Fall/STATS_604/SquishTest/"
         banana_fn = f"banana_{banana_idx}.jpeg"
         raw = cv2.imread(os.path.join(root_folder, folder, banana_fn))
