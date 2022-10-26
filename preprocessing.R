@@ -47,7 +47,7 @@ for (j in 1:5) {
 }
 
 colnames(data_black) <- c("banana", "trt", paste0("pct_brown_day_", seq(1, 5)))
-colnames(data_yellow) <- c("banana", "trt", paste0("pct_brown_day_", seq(1, 5)))
+colnames(data_yellow) <- c("banana", "trt", paste0("pct_yellow_day_", seq(1, 5)))
 
 # read in squish results
 # squish <- read.csv("processed_results/squish.csv", row.names = NULL)
