@@ -1,10 +1,10 @@
 plot*: permutations.csv make_plots.R
 	Rscript make_plots.R
 
-permutations.csv: aggregated_measurements.csv permutation_test.R
+permutations.csv: processed_results/aggregated_measurements.csv permutation_test.R
 	Rscript permutation_test.R
 
-aggregated_measurements.csv: preprocessing.R
+processed_results/aggregated_measurements.csv: preprocessing.R
 	Rscript preprocessing.R
 
 clean:
