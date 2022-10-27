@@ -1,7 +1,16 @@
-# these lines can be replaced by xinhe's code
 set.seed(30001)
 
-obs <- read.csv("aggregated_measurements.csv")
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+outcome_brown <- read.csv("processed_results/aggregated_measurements_black.csv")
+outcome_rgb <- read.csv("processed_results/aggregated_measurements_rgb.csv")
+outcome_squish <- read.csv("processed_results/squish.csv")
+
+obs <- data.frame(
+  avg_rgb = outcome_rgb$avg_rgb_day_5 - outcome_rgb$avg_rgb_day_1,
+  pct_brown = outcome_brown$pct_brown_day_5 - outcome_brown$pct_brown_day_1,
+  pct_squished = outcome_squish$squish
+  )
 
 n_ctrl_bananas <- n_tomato_bananas <- n_apple_bananas <- 12
 n_bananas <- sum(c(n_ctrl_bananas, n_tomato_bananas, n_apple_bananas))
