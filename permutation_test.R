@@ -7,6 +7,7 @@ outcome_rgb <- read.csv("processed_results/aggregated_measurements_rgb.csv")
 outcome_squish <- read.csv("processed_results/squish.csv")
 
 obs <- data.frame(
+  trt = rep(c("C", "A", "T"), each = 12),
   avg_rgb = outcome_rgb$avg_rgb_day_5 - outcome_rgb$avg_rgb_day_1,
   pct_brown = outcome_brown$pct_brown_day_5 - outcome_brown$pct_brown_day_1,
   pct_squished = outcome_squish$squish
@@ -71,3 +72,29 @@ for (i in 1:n_test_permutations){
 # these lines can be kept, but replace test_data with xinhe's final dataframe
 data_to_write <- test_data
 write.csv(test_data, "permutations.csv", row.names = FALSE)
+
+
+# p-values
+# first compute the difference-in-means
+dim_stats_t <- 
+  colMeans(obs[obs$trt=="T", outcome_colnames]) - 
+  colMeans(obs[obs$trt=="C", outcome_colnames])
+dim_stats_a <- 
+  colMeans(obs[obs$trt=="A", outcome_colnames]) - 
+  colMeans(obs[obs$trt=="C", outcome_colnames])
+
+# then compute the p-values
+p1 <- sum(dim_stats_t["avg_rgb"] <= test_data$avg_rgb_tomato) / n_test_permutations
+p2 <- sum(dim_stats_a["avg_rgb"] <= test_data$avg_rgb_apple) / n_test_permutations
+
+p3 <- sum(dim_stats_t["pct_brown"] >= test_data$pct_brown_tomato) / n_test_permutations
+p4 <- sum(dim_stats_a["pct_brown"] >= test_data$pct_brown_apple) / n_test_permutations
+
+p5 <- sum(dim_stats_t["pct_squished"] >= test_data$pct_squished_tomato) / n_test_permutations
+p6 <- sum(dim_stats_a["pct_squished"] >= test_data$pct_squished_apple) / n_test_permutations
+
+p.values <- data.frame("rgb" = c(p1, p2),
+                       "brown" = c(p3, p4),
+                       "squished" = c(p5, p6))
+rownames(p.values) <- c("tomato", "apple")
+write.csv(p.values, "p-values.csv")
