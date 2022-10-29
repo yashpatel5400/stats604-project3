@@ -1,11 +1,13 @@
 plot*: permutations.csv make_plots.R
 	Rscript make_plots.R
 
-permutations.csv: processed_results/aggregated_measurements.csv permutation_test.R
+permutations: permutation_test.R
 	Rscript permutation_test.R
 
-processed_results/aggregated_measurements.csv: preprocessing.R
+aggregated_measurements: preprocessing.R
 	Rscript preprocessing.R
 
 clean:
-	rm aggregated_measurements.csv permutations.csv
+	rm processed_results/aggregated_measurements.csv processed_results/aggregated_measurements_black.csv \
+	processed_results/aggregated_measurements_yellow.csv processed_results/aggregated_measurements_brown.csv \
+	processed_results/aggregated_measurements_rgb.csv permutations.csv
