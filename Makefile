@@ -1,7 +1,7 @@
 plot*: permutations.csv make_plots.R
 	Rscript make_plots.R
 
-permutations: permutation_test.R
+permutations: aggregated_measurements permutation_test.R
 	Rscript permutation_test.R
 
 aggregated_measurements: preprocessing.R
