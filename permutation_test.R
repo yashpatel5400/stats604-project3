@@ -13,6 +13,9 @@ obs <- data.frame(
   pct_squished = outcome_squish$squish
 )
 
+obs_t <- obs[c(1:12, 25:36), ]
+obs_a <- obs[1:24, ]
+
 n_ctrl_bananas <- n_tomato_bananas <- n_apple_bananas <- 12
 n_bananas <- sum(c(n_ctrl_bananas, n_tomato_bananas, n_apple_bananas))
 # obs <- data.frame(
@@ -41,24 +44,36 @@ test_data <- data.frame(
 # Josh's code of generating permutations
 assignments <- c(
   rep("C", n_ctrl_bananas), 
-  rep("A", n_apple_bananas), 
   rep("T", n_tomato_bananas)
 )
-permutations <- data.frame(
+permutations_t <- data.frame(
   t(mapply(function(x) sample(assignments), seq_len(n_test_permutations))),
   row.names = NULL
 )
-colnames(permutations) <- paste0("banana_", seq_len(n_bananas)) 
+colnames(permutations_t) <- paste0(
+  "banana_", c(seq(n_ctrl_bananas), 
+               seq(n_ctrl_bananas + n_apple_bananas + 1, n_bananas))) 
+
+assignments <- c(
+  rep("C", n_ctrl_bananas), 
+  rep("A", n_apple_bananas)
+)
+permutations_a <- data.frame(
+  t(mapply(function(x) sample(assignments), seq_len(n_test_permutations))),
+  row.names = NULL
+)
+colnames(permutations_a) <- paste0("banana_", seq_len(n_ctrl_bananas + n_apple_bananas)) 
+
 
 # find the test statistic (difference-in-means) for all test permutations
 for (i in 1:n_test_permutations){
   # compute the difference-in-means
   test_stats_t <- 
-    colMeans(obs[permutations[i, ]=="T", outcome_colnames]) - 
-    colMeans(obs[permutations[i, ]=="C", outcome_colnames])
+    colMeans(obs_t[permutations_t[i, ]=="T", outcome_colnames]) - 
+    colMeans(obs_t[permutations_t[i, ]=="C", outcome_colnames])
   test_stats_a <- 
-    colMeans(obs[permutations[i, ]=="A", outcome_colnames]) - 
-    colMeans(obs[permutations[i, ]=="C", outcome_colnames])
+    colMeans(obs_a[permutations_a[i, ]=="A", outcome_colnames]) - 
+    colMeans(obs_a[permutations_a[i, ]=="C", outcome_colnames])
   
   test_data[i, "avg_rgb_tomato"] <- test_stats_t["avg_rgb"]
   test_data[i, "pct_brown_tomato"] <- test_stats_t["pct_brown"]
@@ -70,9 +85,13 @@ for (i in 1:n_test_permutations){
 }
 
 # these lines can be kept, but replace test_data with xinhe's final dataframe
-data_to_write <- cbind(test_data, permutations)
-#head(data_to_write)
-write.csv(data_to_write, "permutations.csv", row.names = FALSE)
+data_to_write1 <- cbind(test_data[,c(1,2,4,6)], permutations_t)
+#head(data_to_write1)
+write.csv(data_to_write1, "permutations_tomato.csv", row.names = FALSE)
+
+data_to_write2 <- cbind(test_data[,c(1,3,5,7)], permutations_a)
+#head(data_to_write2)
+write.csv(data_to_write2, "permutations_apple.csv", row.names = FALSE)
 
 
 # p-values
