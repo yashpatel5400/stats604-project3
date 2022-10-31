@@ -11,7 +11,7 @@ obs <- data.frame(
   avg_rgb = outcome_rgb$avg_rgb_day_5 - outcome_rgb$avg_rgb_day_1,
   pct_brown = outcome_brown$pct_brown_day_5 - outcome_brown$pct_brown_day_1,
   pct_squished = outcome_squish$squish
-  )
+)
 
 n_ctrl_bananas <- n_tomato_bananas <- n_apple_bananas <- 12
 n_bananas <- sum(c(n_ctrl_bananas, n_tomato_bananas, n_apple_bananas))
@@ -41,8 +41,8 @@ test_data <- data.frame(
 # Josh's code of generating permutations
 assignments <- c(
   rep("C", n_ctrl_bananas), 
-  rep("T", n_tomato_bananas), 
-  rep("A", n_apple_bananas)
+  rep("A", n_apple_bananas), 
+  rep("T", n_tomato_bananas)
 )
 permutations <- data.frame(
   t(mapply(function(x) sample(assignments), seq_len(n_test_permutations))),
@@ -71,7 +71,7 @@ for (i in 1:n_test_permutations){
 
 # these lines can be kept, but replace test_data with xinhe's final dataframe
 data_to_write <- cbind(test_data, permutations)
-head(data_to_write)
+#head(data_to_write)
 write.csv(data_to_write, "permutations.csv", row.names = FALSE)
 
 
@@ -88,11 +88,11 @@ dim_stats_a <-
 p1 <- sum(dim_stats_t["avg_rgb"] <= test_data$avg_rgb_tomato) / n_test_permutations
 p2 <- sum(dim_stats_a["avg_rgb"] <= test_data$avg_rgb_apple) / n_test_permutations
 
-p3 <- sum(dim_stats_t["pct_brown"] >= test_data$pct_brown_tomato) / n_test_permutations
-p4 <- sum(dim_stats_a["pct_brown"] >= test_data$pct_brown_apple) / n_test_permutations
+p3 <- sum(dim_stats_t["pct_brown"] <= test_data$pct_brown_tomato) / n_test_permutations
+p4 <- sum(dim_stats_a["pct_brown"] <= test_data$pct_brown_apple) / n_test_permutations
 
-p5 <- sum(dim_stats_t["pct_squished"] >= test_data$pct_squished_tomato) / n_test_permutations
-p6 <- sum(dim_stats_a["pct_squished"] >= test_data$pct_squished_apple) / n_test_permutations
+p5 <- sum(dim_stats_t["pct_squished"] <= test_data$pct_squished_tomato) / n_test_permutations
+p6 <- sum(dim_stats_a["pct_squished"] <= test_data$pct_squished_apple) / n_test_permutations
 
 p.values <- data.frame("rgb" = c(p1, p2),
                        "brown" = c(p3, p4),
