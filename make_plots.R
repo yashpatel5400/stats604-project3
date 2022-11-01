@@ -4,6 +4,8 @@ library(tidyr)
 library(ggplot2)
 
 permutations <- read.csv("permutations.csv", row.names = NULL)
+permutations_tomato <- read.csv("permutations_tomato.csv", row.names = NULL)
+permutations_apple <- read.csv("permutations_apple.csv", row.names = NULL)
 data_black <- read.csv("processed_results/aggregated_measurements_black.csv", row.names = NULL)
 data_yellow <- read.csv("processed_results/aggregated_measurements_yellow.csv", row.names = NULL)
 data_avg_r <- read.csv("processed_results/aggregated_measurements_rgb.csv", row.names = NULL)
@@ -32,8 +34,6 @@ plot_theme <- theme(panel.background = element_blank(),
 plot_folder <- "plots"
 
 stat_cols <- colnames(permutations)[!grepl("(banana|permutation)", colnames(permutations))]
-banana_cols <- colnames(permutations)[grepl("banana", colnames(permutations))]
-n_bananas <- length(banana_cols)
 true_test_statistics <- mapply(
   function(stat) {
     if (grepl("apple$", stat)) {
@@ -54,6 +54,7 @@ true_test_statistics <- mapply(
 # plot 1 data
 pivoted_measurements <- tidyr::pivot_longer(measurements, -c("banana", "trt"))
 pivoted_measurements <- pivoted_measurements %>%
+  dplyr::filter(grepl("_day_", name)) %>%
   dplyr::mutate(day = gsub("day", "Day",
                            gsub("_", " ",
                                 gsub("(avg_rgb|pct_brown|pct_yellow)_", "", name))),
@@ -69,16 +70,61 @@ pivoted_measurements <- pivoted_measurements %>%
                                    labels = c("Control", "Apple", "Tomato")))
 
 # plot 2 data
-assignment_counts <- sapply(permutations[, banana_cols], table)
-count_plot_df <- cbind(
-  data.frame("count" = matrix(assignment_counts)),
-  "banana" = factor(rep(banana_cols, each = 3),
-                    levels=paste0("banana_", seq_len(n_bananas)),
-                    labels = seq_len(n_bananas)),
-  "Treatment" = factor(rep(row.names(assignment_counts), n_bananas),
-                       levels=c("C", "A", "T"),
-                       labels=c("Control", "Apple", "Tomato"))
+n_bananas <- 36
+count_plot_df <- rbind(
+  dplyr::bind_rows(
+    Map(function(col) {
+      tidyr::pivot_longer(permutations_apple %>%
+                            dplyr::count(!!sym(col)),
+                          !!sym(col),
+                          names_to = "Banana",
+                          values_to = "Treatment") %>%
+        dplyr::mutate(Test = "Apple Permutation Test",
+                      Banana = factor(gsub("banana_", "", Banana),
+                                      levels = seq_len(n_bananas)),
+                      Treatment = dplyr::case_when(
+                        Treatment == "A" ~ "Apple",
+                        Treatment == "T" ~ "Tomato",
+                        TRUE ~ "Control"
+                      ))
+    },
+    colnames(permutations_apple)[grepl("banana", colnames(permutations_apple))])),
+  dplyr::bind_rows(
+    Map(function(col) {
+      tidyr::pivot_longer(permutations_tomato %>%
+                            dplyr::count(!!sym(col)),
+                          !!sym(col),
+                          names_to = "Banana",
+                          values_to = "Treatment") %>%
+        dplyr::mutate(Test = "Tomato Permutation Test",
+                      Banana = factor(gsub("banana_", "", Banana),
+                                      levels = seq_len(n_bananas)),
+                      Treatment = dplyr::case_when(
+                        Treatment == "A" ~ "Apple",
+                        Treatment == "T" ~ "Tomato",
+                        TRUE ~ "Control"
+                      ))
+    },
+    colnames(permutations_tomato)[grepl("banana", colnames(permutations_tomato))]))
 )
+# 
+# assignment_counts <- cbind(
+#   sapply(permutations_tomato[, grepl("banana", colnames(permutations_tomato))],
+#          table),
+#   sapply(permutations_apple[, grepl("banana", colnames(permutations_apple))],
+#          table)
+# )
+# count_plot_df <- cbind(
+#   data.frame("count" = matrix(assignment_counts)),
+  # "banana" = factor(rep(c(colnames(permutations_tomato)[grepl("banana", colnames(permutations_tomato))],
+  #                         colnames(permutations_apple)[grepl("banana", colnames(permutations_apple))]),
+  #                         each = 2),
+  #                   levels=paste0("banana_", seq_len(n_bananas)),
+  #                   labels = seq_len(n_bananas)),
+#   "Treatment" = factor(rep(row.names(assignment_counts), n_bananas),
+#                        levels=c("C", "A", "T"),
+#                        labels=c("Control", "Apple", "Tomato"))
+# )
 
 # plot 3a
 make_all_bananas_comparison_plot <- function(perms, stat) {
@@ -100,21 +146,22 @@ make_all_bananas_comparison_plot <- function(perms, stat) {
             "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat)))))),
     clean_trt, "vs. Control", collapse = " ")
   
+  banana_cols <- colnames(perms)[grepl("banana", colnames(perms))]
   pivot_data <- Reduce(
     rbind,
-    lapply(seq_len(n_bananas), 
-          function(num) {
-            banana_col <- paste0("banana_", num)
+    lapply(banana_cols, 
+          function(banana_col) {
             msk <- perms[banana_col] == trt
             banana_perms <- perms[msk,
                                   c(banana_col, colnames(perms)
                                     [!grepl("banana", colnames(perms))])]
             colnames(banana_perms)[1] <- "trt"
-            cbind("Banana" = num, banana_perms)
+            cbind("Banana" = as.numeric(gsub("banana_", "", banana_col)),
+                  banana_perms)
           })
   )
   pivot_data$Banana <- factor(pivot_data$Banana,
-                              levels = seq_len(n_bananas))
+                              levels = as.numeric(gsub("banana_", "", banana_cols)))
 
   # running one-sided tests because trt should increase avg RGB and pct brown
   pval <- mean(perms[[stat]] >= true_test_statistics[stat])
@@ -150,47 +197,43 @@ make_all_bananas_comparison_plot <- function(perms, stat) {
 # plots 3b func
 make_banana_specific_comparison_plot <- function(perms, banana, stat) {
   banana_col <- paste0("banana_", banana)
-  # if (grepl("tomato$", stat)) {
-  #   trt <- "T"
-  #   clean_trt <- "Tomato"
-  # } else if (grepl("apple$", stat)) {
-  #   trt <- "A"
-  #   clean_trt <- "Apple"
-  # } else {
-  #   trt <- "C"
-  #   clean_trt <- "Control"
-  # }
-  # clean_stat <- paste(
-  #   gsub("% squished", "Squish Ratio",
-  #        gsub(
-  #          "pct", "%", gsub(
-  #            "avg", "Average", gsub(
-  #              "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat)))))),
-  #   clean_trt, "vs. Control", collapse = " ")
-  clean_stat <- gsub("% squished", "Squish Ratio",
+  if (grepl("tomato$", stat)) {
+    trt <- "T"
+    clean_trt <- "Tomato"
+  } else if (grepl("apple$", stat)) {
+    trt <- "A"
+    clean_trt <- "Apple"
+  } else {
+    trt <- "C"
+    clean_trt <- "Control"
+  }
+  clean_stat <- paste(
+    gsub("% squished", "Squish Ratio",
          gsub(
            "pct", "%", gsub(
              "avg", "Average", gsub(
-               "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat))))))
+               "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat)))))),
+    clean_trt, "vs. Control", collapse = " ")
+  # clean_stat <- gsub("% squished", "Squish Ratio",
+  #        gsub(
+  #          "pct", "%", gsub(
+  #            "avg", "Average", gsub(
+  #              "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat))))))
 
   ctrl_data <- data.frame(
-    "trt" = c(perms[[banana_col]][perms[banana_col] == "C"],
-              perms[[banana_col]][perms[banana_col] == "C"]),
-    "perm_val" = c(perms[[paste0(stat, "_tomato")]][perms[banana_col] == "C"],
-                   perms[[paste0(stat, "_apple")]][perms[banana_col] == "C"])
+    "trt" = perms[[banana_col]][perms[banana_col] == "C"],
+    "perm_val" = perms[[stat]][perms[banana_col] == "C"]
   )
   trt_data <- data.frame(
-    "trt" = c(perms[[banana_col]][perms[banana_col] == "T"],
-              perms[[banana_col]][perms[banana_col] == "A"]),
-    "perm_val" = c(perms[[paste0(stat, "_tomato")]][perms[banana_col] == "T"],
-                   perms[[paste0(stat, "_apple")]][perms[banana_col] == "A"])
+    "trt" = perms[[banana_col]][perms[banana_col] == trt],
+    "perm_val" = perms[[stat]][perms[banana_col] == trt]
   )
-  legend_x_val <- min(quantile(ctrl_data[["perm_val"]], 0.005),
-                      quantile(trt_data[["perm_val"]], 0.005))
+  legend_x_val <- min(quantile(ctrl_data[["perm_val"]], 0.01),
+                      quantile(trt_data[["perm_val"]], 0.01))
   if (grepl("pct_brown", stat)) {
     cut_val <- 0.00025
   } else if (grepl("avg_rgb", stat)) {
-    cut_val <- 0.0025
+    cut_val <- 0.0015
   } else {
     cut_val <- 0.025
   }
@@ -224,7 +267,7 @@ pivoted_measurements %>%
   scale_color_manual(values = c("Control" = GREEN, "Apple" = YELLOW, "Tomato" = BROWN)) +
   labs(x = "Banana", y = "Measurement Value") +
   plot_theme
-ggsave(paste(plot_folder, "plot1.png", sep="/"))
+ggsave(paste(plot_folder, "plot1.png", sep="/"), width = 20, height = 15, units = "cm")
 
 measurements %>%
   dplyr::mutate(Treatment = factor(trt,
@@ -236,25 +279,41 @@ measurements %>%
   scale_color_manual(values = c("Control" = GREEN, "Apple" = YELLOW, "Tomato" = BROWN)) +
   labs(x = "Banana", y = "Ratio of Area After to Area Before Squish") +
   plot_theme
-ggsave(paste(plot_folder, "plot2.png", sep="/"))
+ggsave(paste(plot_folder, "plot2.png", sep="/"), width = 20, height = 15, units = "cm")
 
-ggplot(count_plot_df) +
-  geom_col(aes(x=count, y=banana, fill=Treatment),
+ggplot(count_plot_df[count_plot_df$Test == "Apple Permutation Test",]) +
+  geom_col(aes(x=n, y=Banana, fill=Treatment),
            position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = c("Control" = GREEN, "Apple" = YELLOW, "Tomato" = BROWN)) +
   labs(x="N Permutations", y="Banana") +
   plot_theme
-ggsave(paste(plot_folder, "plot3.png", sep="/"))
+ggsave(paste(plot_folder, "plot3a.png", sep="/"), width = 16, height = 18, units = "cm")
+
+ggplot(count_plot_df[count_plot_df$Test == "Tomato Permutation Test",]) +
+  geom_col(aes(x=n, y=Banana, fill=Treatment),
+           position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = c("Control" = GREEN, "Apple" = YELLOW, "Tomato" = BROWN)) +
+  labs(x="N Permutations", y="Banana") +
+  plot_theme
+ggsave(paste(plot_folder, "plot3b.png", sep="/"), width = 16, height = 18, units = "cm")
 
 for (r in seq_along(stat_cols)) {
-  make_all_bananas_comparison_plot(permutations, stat_cols[r])
-  ggsave(paste(plot_folder, paste0("plot4", letters[r], ".png"), sep="/"))
+  stat_col <- stat_cols[r]
+  if (grepl("apple", stat_col)) {
+    make_all_bananas_comparison_plot(permutations_apple, stat_col)
+  } else if (grepl("tomato", stat_col)) {
+    make_all_bananas_comparison_plot(permutations_tomato, stat_col)
+  } else {
+    stop("Did not encounter a valid stat col")
+  }
+  ggsave(paste(plot_folder, paste0("plot4", letters[r], ".png"), sep="/"),
+         width = 20, height = 15, units = "cm")
 }
 
 make_banana_specific_comparison_plot(permutations, 28, "pct_squished")
-ggsave(paste(plot_folder, "plot5.png", sep="/"))
-make_banana_specific_comparison_plot(permutations, 30, "pct_brown")
-ggsave(paste(plot_folder, "plot6.png", sep="/"))
-make_banana_specific_comparison_plot(permutations, 30, "avg_rgb")
-ggsave(paste(plot_folder, "plot7.png", sep="/"))
+ggsave(paste(plot_folder, "plot5.png", sep="/"), width = 25, height = 15, units = "cm")
+make_banana_specific_comparison_plot(permutations_tomato, 30, "pct_brown_tomato")
+ggsave(paste(plot_folder, "plot6.png", sep="/"), width = 25, height = 15, units = "cm")
+make_banana_specific_comparison_plot(permutations_apple, 19, "avg_rgb_apple")
+ggsave(paste(plot_folder, "plot7.png", sep="/"), width = 25, height = 15, units = "cm")
 
