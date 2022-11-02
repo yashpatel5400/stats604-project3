@@ -62,7 +62,7 @@ pivoted_measurements <- pivoted_measurements %>%
                                     value, value * 100),
                 name = gsub("pct", "%",
                             gsub("avg", "Average",
-                                 gsub("rgb", "RGB",
+                                 gsub("rgb", "Red Channel",
                                       gsub("_", " ",
                                            gsub("_day_\\d{1}", "", name))))),
                 Treatment = factor(trt,
@@ -138,13 +138,12 @@ make_all_bananas_comparison_plot <- function(perms, stat) {
     trt <- "C"
     clean_trt <- "Control"
   }
-  clean_stat <- paste(
-    gsub("% squished", "Squish Ratio",
+  clean_stat <- gsub(
+    "% squished", "Squish Ratio",
       gsub(
         "pct", "%", gsub(
           "avg", "Average", gsub(
-            "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat)))))),
-    clean_trt, "vs. Control", collapse = " ")
+            "rgb", "Red Channel", gsub(" (tomato|apple)$", "", gsub("_", " ", stat))))))
   
   banana_cols <- colnames(perms)[grepl("banana", colnames(perms))]
   pivot_data <- Reduce(
@@ -207,13 +206,12 @@ make_banana_specific_comparison_plot <- function(perms, banana, stat) {
     trt <- "C"
     clean_trt <- "Control"
   }
-  clean_stat <- paste(
-    gsub("% squished", "Squish Ratio",
-         gsub(
-           "pct", "%", gsub(
-             "avg", "Average", gsub(
-               "rgb", "RGB", gsub(" (tomato|apple)$", "", gsub("_", " ", stat)))))),
-    clean_trt, "vs. Control", collapse = " ")
+  clean_stat <- gsub(
+    "% squished", "Squish Ratio",
+       gsub(
+         "pct", "%", gsub(
+           "avg", "Average", gsub(
+             "rgb", "Red Channel", gsub(" (tomato|apple)$", "", gsub("_", " ", stat))))))
   # clean_stat <- gsub("% squished", "Squish Ratio",
   #        gsub(
   #          "pct", "%", gsub(
