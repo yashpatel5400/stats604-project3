@@ -23,7 +23,7 @@ there appears to be one "banana-specific" distribution whose shape differs somew
 notably from the distribution of all the permutations, which is made clearer in
 the histogram below.
 
-![](../plots/plot4a.png)
+![](../plots/plot4b.png)
 
 This banana had a change in average red channel between days 1 and 5 of -0.02,
 by far the lowest of all the bananas and theoretically impossible under the
