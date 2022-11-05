@@ -23,7 +23,7 @@ there appears to be one "banana-specific" distribution whose shape differs somew
 notably from the distribution of all the permutations, which is made clearer in
 the histogram below.
 
-![png](plots/plot4a.png)\
+![](../plots/plot4a.png)
 
 This banana had a change in average red channel between days 1 and 5 of -0.02,
 by far the lowest of all the bananas and theoretically impossible under the
@@ -43,4 +43,4 @@ to be due to measurement error, it may be more appropriate to use an
 outlier-robust test statistic such as the difference-in-medians in future tests
 of the average red channel measurement.
 
-![png](plots/plot7.png)\
+![](../plots/plot7.png)
