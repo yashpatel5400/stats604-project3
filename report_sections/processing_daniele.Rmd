@@ -1,0 +1,95 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Processing
+
+```{r processing, echo=FALSE}
+library(imager)
+library(dplyr)
+
+data_black <- data.frame("banana" = seq_len(36),
+                   "trt" = rep(c("C", "A", "T"), each = 12))
+data_yellow <- data.frame("banana" = seq_len(36),
+                   "trt" = rep(c("C", "A", "T"), each = 12))
+data_avg_r <- data.frame("banana" = seq_len(36),
+                         "trt" = rep(c("C", "A", "T"), each = 12))
+
+for (j in 1:5) {
+  proportion_black = c()
+  proportion_yellow = c()
+  avg_r = c()
+  for (i in 1:36) {
+    # Take the pictures from the folder containing the banana's pics
+    banana = load.image(paste("Day_", j, "/",i,".jpg",sep = ""))
+    
+    #plot(banana)
+    #class(banana)
+    #dim(banana)
+    
+    # Transform the bananapic in a data frame
+    bdf_1 = as.data.frame(banana)
+    
+    # divide by 3 because there are 3 channels, each of them are repeated (RGB)
+    total_area = dim(bdf_1)[1]/3
+    white_area = dim(filter(bdf_1, value == 1))[1]/3
+    banana_area = total_area - white_area
+    
+    # Transform the bananapic in a greyscale
+    # sqrt because it helps dividing the black spots from the white.
+    gbanana = sqrt(grayscale((banana)))
+    #plot(gbanana)
+    
+    bdf_2 = as.data.frame(gbanana)
+    # Select the most black spots
+    black_spots = which(bdf_2$value<0.5)
+    # Set to white all the other spots (only if you what to see the next plot
+    #bdf_2[-black_spots,3]= 1
+    
+    black_area = length(black_spots)
+    yellow_area = banana_area - length(black_spots)
+    
+    #as.cimg(bdf_2, dims = dim(gbanana)) %>% plot
+    #aggregate(bdf, list(channel = bdf$cc),FUN = mean)
+    
+    proportion_black = c(proportion_black, black_area/banana_area)
+    proportion_yellow = c(proportion_yellow, yellow_area/banana_area)
+    
+    # average of the R channel, excluding white area and black spots
+    avg_r_channel <- mean(
+      filter(bdf_1[bdf_1$cc == 1, ][bdf_2$value < 0.5, ], value < 1)$value)
+    
+    avg_r <- c(avg_r, avg_r_channel)
+  }
+  data_black <- cbind(data_black, proportion_black)
+  data_yellow <- cbind(data_yellow, proportion_yellow)
+  data_avg_r <- cbind(data_avg_r, avg_r)
+}
+
+colnames(data_black) <- c("banana", "trt", paste0("pct_brown_day_", seq(1, 5)))
+colnames(data_yellow) <- c("banana", "trt", paste0("pct_yellow_day_", seq(1, 5)))
+colnames(data_avg_r) <- c("banana", "trt", paste0("avg_rgb_day_", seq(1, 5)))
+
+
+write.csv(data_black, "../processed_results/aggregated_measurements_black.csv", row.names = FALSE)
+write.csv(data_yellow, "../processed_results/aggregated_measurements_yellow.csv", row.names = FALSE)
+write.csv(data_avg_r, "../processed_results/aggregated_measurements_rgb.csv", row.names = FALSE)
+```
+
+In this section we process the data in the following way:
+
+1. Collect all the bananas' pics for all the 5 day.
+
+2. For each banana pic, make a selection, i.e. select the banana only and put it in a completely white background. This helps in having pixels not corresponding to a banana location be equal to $(255,255,255)$.
+
+3. Read each banana pic from previous step in R and: count the number of non-white pixels, i.e. the pixels corresponding to the banana.
+
+4. Transform the pic into "greyscale" in order to have a unique channel and being able to select the brown spots with a uniform measure. Count the number of pixels with values less than $0.5$ (recall that in R the maximum RGB value is $1$ instead of $255$) and divide this number by the number of non-white pixels in step 2. The result is the proportion of black spots in the banana. Then $1$ minus this proportion is the proportion of yellow (non-brown) spots. Take also the average of the red channel values corresponding to the non-brown spots.
+
+5. Collect the data for the proportion of brown spots, yellow spots and the average of red spots for each banana and output a csv file. For each banana we also add a variable that specify the treatment: $C$ for control, $A$ for apple and $T$ for tomato.
